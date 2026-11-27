@@ -1,0 +1,28 @@
+{
+    "name": "Adventure3D.Tests.EditMode",
+    "rootNamespace": "Adventure3D.Tests",
+    "references": [
+        "Adventure3D.Core",
+        "Adventure3D.Configuration",
+        "Adventure3D.Gameplay",
+        "Adventure3D.Identity",
+        "Adventure3D.Input",
+        "Adventure3D.Networking",
+        "Adventure3D.Platform",
+        "Adventure3D.Presentation",
+        "Adventure3D.Bootstrap",
+        "Unity.Networking.Transport",
+        "Unity.Collections",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
+    ],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": ["nunit.framework.dll"],
+    "autoReferenced": false,
+    "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

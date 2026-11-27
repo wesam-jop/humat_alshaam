@@ -1,0 +1,14 @@
+{
+    "name": "Adventure3D.Input",
+    "rootNamespace": "Adventure3D.Input",
+    "references": ["Adventure3D.Core", "Adventure3D.Configuration", "Adventure3D.Platform", "Unity.InputSystem"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,23 @@
+{
+    "name": "Adventure3D.Networking",
+    "rootNamespace": "Adventure3D.Networking",
+    "references": [
+        "Adventure3D.Core",
+        "Adventure3D.Configuration",
+        "Adventure3D.Gameplay",
+        "Adventure3D.Identity",
+        "Unity.Networking.Transport",
+        "Unity.Collections",
+        "Unity.Burst",
+        "Unity.Mathematics"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

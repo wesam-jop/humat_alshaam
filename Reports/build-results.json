@@ -1,0 +1,38 @@
+{
+    "results": [
+        {
+            "target": "StandaloneWindows64",
+            "status": "succeeded",
+            "output": "Builds/Windows/Adventure3D.exe",
+            "sizeBytes": 91008707,
+            "seconds": 5.6080355,
+            "detail": "result=Succeeded errors=0 warnings=0"
+        },
+        {
+            "target": "Android",
+            "status": "unavailable",
+            "output": "Builds/Android/Adventure3D.apk",
+            "sizeBytes": 0,
+            "seconds": 0.0,
+            "detail": "Android Build Support (SDK/NDK/OpenJDK) module is not installed for this editor"
+        },
+        {
+            "target": "iOS (Xcode project export)",
+            "status": "unavailable",
+            "output": "Builds/iOS",
+            "sizeBytes": 0,
+            "seconds": 0.0,
+            "detail": "iOS Build Support module is not installed. Exporting the Xcode project works on Windows once installed; building the .ipa and running on a device require macOS + Xcode + an Apple developer account"
+        },
+        {
+            "target": "PlayStation (PS5 assumed, open decision)",
+            "status": "unavailable",
+            "output": "",
+            "sizeBytes": 0,
+            "seconds": 0.0,
+            "detail": "Requires Sony partner registration, licensed PlayStation Unity build module, SDK and a dev kit; none are available in this environment"
+        }
+    ],
+    "unityVersion": "6000.0.85f2",
+    "timeUtc": "2026-11-26T21:55:02.9340128Z"
+}

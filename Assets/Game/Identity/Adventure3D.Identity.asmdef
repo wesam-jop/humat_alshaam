@@ -1,0 +1,14 @@
+{
+    "name": "Adventure3D.Identity",
+    "rootNamespace": "Adventure3D.Identity",
+    "references": ["Adventure3D.Core"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

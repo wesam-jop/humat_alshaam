@@ -1,0 +1,14 @@
+{
+    "name": "Adventure3D.Configuration",
+    "rootNamespace": "Adventure3D.Configuration",
+    "references": ["Adventure3D.Core"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

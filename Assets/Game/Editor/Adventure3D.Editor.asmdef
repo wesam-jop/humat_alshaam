@@ -1,0 +1,22 @@
+{
+    "name": "Adventure3D.Editor",
+    "rootNamespace": "Adventure3D.EditorTools",
+    "references": [
+        "Adventure3D.Core",
+        "Adventure3D.Configuration",
+        "Adventure3D.Gameplay",
+        "Adventure3D.Presentation",
+        "Adventure3D.Bootstrap",
+        "Unity.InputSystem",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

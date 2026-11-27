@@ -1,0 +1,24 @@
+{
+    "name": "Adventure3D.Presentation",
+    "rootNamespace": "Adventure3D.Presentation",
+    "references": [
+        "Adventure3D.Core",
+        "Adventure3D.Configuration",
+        "Adventure3D.Gameplay",
+        "Adventure3D.Identity",
+        "Adventure3D.Input",
+        "Adventure3D.Networking",
+        "Adventure3D.Platform",
+        "UnityEngine.UI",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

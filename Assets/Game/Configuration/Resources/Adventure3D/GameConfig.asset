@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 381fb077ac9b0024aaa543f685ade4b1, type: 3}
+  m_Name: GameConfig
+  m_EditorClassIdentifier: 
+  Movement: {fileID: 11400000, guid: 8a93533fcbd006040a8084dee7ae2a44, type: 2}
+  Air: {fileID: 11400000, guid: 51e09c1dfbb74904da6fec0384f72023, type: 2}
+  Physics: {fileID: 11400000, guid: c204193e98e9d644e86d8f68f5714611, type: 2}
+  Camera: {fileID: 11400000, guid: 0b72390bb888fda45b76f2e31561dfd7, type: 2}
+  Input: {fileID: 11400000, guid: cf209446287761e4694d1eaf25f8fd3d, type: 2}
+  Network: {fileID: 11400000, guid: 5951e15c5841979409119fc969b6b29e, type: 2}
