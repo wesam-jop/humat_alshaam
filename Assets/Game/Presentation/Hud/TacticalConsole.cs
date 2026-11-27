@@ -166,7 +166,7 @@ namespace Adventure3D.Presentation
                         Append($"mode: {_session.Mode} | players: {_session.World.Count} | tickrate: {_session.World.Config.Physics.TickRate}Hz");
                         Append($"sv_gravity: {Cs16ConVars.SvGravity} | sv_maxspeed: {Cs16ConVars.SvMaxSpeed} | bot_difficulty: {Cs16ConVars.BotDifficulty}");
                         foreach (var p in _session.World.Players)
-                            Append($"  #{p.PlayerId} {p.DisplayName} | team={p.Combat.Team} | hp={p.Combat.Health} | \${p.Combat.Money} | bot={p.Combat.IsBot}");
+                            Append($"  #{p.PlayerId} {p.DisplayName} | team={p.Combat.Team} | hp={p.Combat.Health} | ${p.Combat.Money} | bot={p.Combat.IsBot}");
                     }
                     break;
 

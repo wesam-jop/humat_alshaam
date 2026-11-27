@@ -94,11 +94,29 @@ namespace Adventure3D.Presentation
 
         public static AudioClip Zoom => LoadWeaponWav("zoom") ?? Equip;
 
-        static AudioClip LoadWeaponWav(string name)
+        public static AudioClip Footstep()
         {
-            string key = "w_" + name;
+            int idx = Random.Range(1, 5);
+            return LoadFolderWav("Adventure3D/Audio/Player/", "pl_dirt" + idx);
+        }
+
+        public static AudioClip FallPain() => LoadFolderWav("Adventure3D/Audio/Player/", Random.value < 0.5f ? "pl_fallpain1" : "pl_fallpain2") ?? Hurt;
+        public static AudioClip Death() => LoadFolderWav("Adventure3D/Audio/Player/", "die" + Random.Range(1, 4)) ?? Hurt;
+        public static AudioClip FleshHit() => LoadFolderWav("Adventure3D/Audio/Player/", "bhit_flesh-" + Random.Range(1, 4)) ?? Hit;
+        public static AudioClip ArmorHit(bool helmet) => LoadFolderWav("Adventure3D/Audio/Player/", helmet ? "bhit_helmet-1" : "bhit_kevlar-1") ?? Hit;
+        public static AudioClip RoundResult(bool defendersWon) => LoadFolderWav("Adventure3D/Audio/Radio/", defendersWon ? "ctwin" : "terwin") ?? Kill;
+        public static AudioClip RoundGo => LoadFolderWav("Adventure3D/Audio/Radio/", "com_go") ?? Equip;
+        public static AudioClip BombPlanted => LoadFolderWav("Adventure3D/Audio/Radio/", "bombpl") ?? Streak;
+        public static AudioClip BombDefused => LoadFolderWav("Adventure3D/Audio/Radio/", "bombdef") ?? Kill;
+        public static AudioClip RadioClip(string name) => LoadFolderWav("Adventure3D/Audio/Radio/", name);
+
+        static AudioClip LoadWeaponWav(string name) => LoadFolderWav("Adventure3D/Audio/Weapons/", name);
+
+        static AudioClip LoadFolderWav(string folder, string name)
+        {
+            string key = folder + name;
             if (Cache.TryGetValue(key, out var c) && c != null) return c;
-            c = Resources.Load<AudioClip>("Adventure3D/Audio/Weapons/" + name);
+            c = Resources.Load<AudioClip>(key);
             if (c != null) Cache[key] = c;
             return c;
         }

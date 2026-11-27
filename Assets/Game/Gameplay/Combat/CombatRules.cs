@@ -24,6 +24,8 @@ namespace Adventure3D.Gameplay
         public const float HeadHeight = 1.45f;
         public const float SpawnProtection = 1.5f;
         public const float FallOutHeight = -20f;
+        /// <summary>CS 1.6 safe landing speed (580 units/s = 14.73 m/s) before fall damage applies.</summary>
+        public const float SafeLandingSpeed = 14.73f;
 
         /// <summary>A free spawn position in the team's area (falls back to the scene spawn points).</summary>
         public static Pose TeamSpawnPose(Team team, WorldSimulation world)
@@ -145,6 +147,38 @@ namespace Adventure3D.Gameplay
             if (a.State.Position.y < FallOutHeight)
             {
                 Kill(a, a, c.ActiveWeapon, false, events);
+                return;
+            }
+
+            // CS 1.6 Fall Damage when landing faster than 580 units/s (14.73 m/s).
+            if ((a.State.Events & MotorEvents.Landed) != 0 && a.State.LandingSpeed > SafeLandingSpeed)
+            {
+                int fallDmg = Mathf.Max(1, Mathf.RoundToInt((a.State.LandingSpeed - SafeLandingSpeed) * 9.5f));
+                int hp = c.Health - fallDmg;
+                events.Add(new CombatEvent
+                {
+                    Type = CombatEventType.Damage, Actor = a.PlayerId, Target = a.PlayerId, Weapon = c.ActiveWeapon,
+                    Origin = a.State.Position, Point = a.State.Position, Amount = (short)fallDmg, Headshot = false,
+                });
+                if (hp <= 0)
+                {
+                    Kill(a, a, c.ActiveWeapon, false, events);
+                    return;
+                }
+                c.Health = (byte)hp;
+            }
+
+            // ---- drop active weapon (G / SlotRequest == 4)
+            if (cmd.SlotRequest == 4 && c.ActiveSlot != WeaponSlot.Knife)
+            {
+                if (c.ActiveSlot == WeaponSlot.Primary) c.PrimaryWeapon = PlayerCombatState.NoWeapon;
+                else if (c.ActiveSlot == WeaponSlot.Secondary) c.SecondaryWeapon = PlayerCombatState.NoWeapon;
+                c.ActiveSlot = NextSlot(c);
+                c.ReloadTimer = 0f;
+                c.SetFlag(CombatFlags.Reloading, false);
+                var nextW = WeaponCatalog.Get(c.ActiveWeapon);
+                c.SwitchTimer = nextW.DrawTime;
+                events.Add(new CombatEvent { Type = CombatEventType.Equip, Actor = a.PlayerId, Weapon = c.ActiveWeapon });
                 return;
             }
 
@@ -413,6 +447,10 @@ namespace Adventure3D.Gameplay
                 case "helmet": return 1000;
                 case "ammo_primary": return 180;
                 case "ammo_secondary": return 80;
+                case "hegrenade": return 300;
+                case "flashbang": return 200;
+                case "smoke": return 300;
+                case "defuser": return 400;
                 default: return WeaponCatalog.TryIndexOf(itemId, out var i) ? WeaponCatalog.Get(i).Price : -1;
             }
         }
@@ -440,6 +478,21 @@ namespace Adventure3D.Gameplay
                 case "ammo_secondary":
                     if (c.SecondaryWeapon == PlayerCombatState.NoWeapon) return BuyResult.Unknown;
                     c.SecondaryReserve = (ushort)WeaponCatalog.Get(c.SecondaryWeapon).ReserveMax;
+                    break;
+                case "hegrenade":
+                    if (c.HeGrenades >= 1) return BuyResult.Unknown;
+                    c.HeGrenades = 1;
+                    break;
+                case "flashbang":
+                    if (c.Flashbangs >= 2) return BuyResult.Unknown;
+                    c.Flashbangs++;
+                    break;
+                case "smoke":
+                    if (c.SmokeGrenades >= 1) return BuyResult.Unknown;
+                    c.SmokeGrenades = 1;
+                    break;
+                case "defuser":
+                    c.SetFlag(CombatFlags.Defuser, true);
                     break;
                 default:
                     if (!WeaponCatalog.TryIndexOf(itemId, out var idx)) return BuyResult.Unknown;

@@ -72,6 +72,13 @@ namespace Adventure3D.Input
 
         /// <summary>Menu / pause command (Esc, gamepad Start, touch pause button).</summary>
         public event Action MenuPressed;
+        /// <summary>Tactical flashlight toggle (F / impulse 100).</summary>
+        public event Action FlashlightPressed;
+        /// <summary>Radio menu trigger (1 = Z, 2 = X).</summary>
+        public event Action<int> RadioMenuPressed;
+        /// <summary>Direct grenade throw request (0 = HE, 1 = Flash, 2 = Smoke).</summary>
+        public event Action<int> GrenadeThrowRequested;
+        public bool UseHeld { get; private set; }
 
         public void Configure(InputProfile profile, CameraProfile camera)
         {
@@ -179,6 +186,15 @@ namespace Adventure3D.Input
                 if (kb.digit1Key.wasPressedThisFrame) slotPick = 1;
                 if (kb.digit2Key.wasPressedThisFrame) slotPick = 2;
                 if (kb.digit3Key.wasPressedThisFrame) slotPick = 3;
+                if (kb.gKey.wasPressedThisFrame) slotPick = 4;
+                if (kb.digit4Key.wasPressedThisFrame && _inputEnabled) GrenadeThrowRequested?.Invoke(0);
+                if (kb.digit5Key.wasPressedThisFrame && _inputEnabled) GrenadeThrowRequested?.Invoke(1);
+                if (kb.digit6Key.wasPressedThisFrame && _inputEnabled) GrenadeThrowRequested?.Invoke(2);
+                UseHeld = kb.eKey.isPressed && _inputEnabled;
+                if (kb.eKey.isPressed && _inputEnabled && slotPick == 0) slotPick = 8;
+                if (kb.fKey.wasPressedThisFrame && _inputEnabled) FlashlightPressed?.Invoke();
+                if (kb.zKey.wasPressedThisFrame && _inputEnabled) RadioMenuPressed?.Invoke(1);
+                if (kb.xKey.wasPressedThisFrame && _inputEnabled) RadioMenuPressed?.Invoke(2);
                 if (kb.anyKey.wasPressedThisFrame) LastDevice = InputDeviceKind.KeyboardMouse;
             }
             var mouse = Mouse.current;

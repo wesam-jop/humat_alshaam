@@ -101,6 +101,10 @@ namespace Adventure3D.Gameplay
             new Vector3(14f, 0.05f, 30f), new Vector3(-14f, 0.05f, 30f), new Vector3(0f, 0.05f, 36f),
         };
 
+        public static readonly Vector3 BombSiteA = new Vector3(14f, 0f, 12f);
+        public static readonly Vector3 BombSiteB = new Vector3(-14f, 0f, 12f);
+        public const float BombSiteRadius = 4.5f;
+
         public const string CombatCoverName = "CombatCover";
 
         /// <summary>

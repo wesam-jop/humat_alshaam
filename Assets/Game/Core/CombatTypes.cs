@@ -21,6 +21,7 @@ namespace Adventure3D.Core
         Switching = 1 << 3,
         Helmet = 1 << 4,
         Bot = 1 << 5,
+        Defuser = 1 << 6,
     }
 
     /// <summary>Weapon slots carried by every player.</summary>
@@ -47,6 +48,9 @@ namespace Adventure3D.Core
         public ushort PrimaryReserve;
         public byte SecondaryClip;
         public ushort SecondaryReserve;
+        public byte HeGrenades;
+        public byte Flashbangs;
+        public byte SmokeGrenades;
         public ushort Kills;
         public ushort Deaths;
         public int Money;
@@ -112,6 +116,18 @@ namespace Adventure3D.Core
         /// <summary>Match clock ran out: scores reset, everyone respawns.</summary>
         RoundRestart = 7,
         DryFire = 8,
+        /// <summary>A team won the round (Actor = winning Team byte, Amount = DefendersScore | (AttackersScore &lt;&lt; 8)).</summary>
+        RoundWin = 9,
+        BombPlanted = 10,
+        BombDefused = 11,
+        BombExploded = 12,
+    }
+
+    public enum RoundPhase : byte
+    {
+        FreezeTime = 0,
+        Live = 1,
+        RoundEnd = 2,
     }
 
     /// <summary>Something that happened in combat, for HUD, effects and sounds (replicated to clients).</summary>

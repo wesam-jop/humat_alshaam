@@ -63,6 +63,19 @@ namespace Adventure3D.Networking
         ushort _nextBotId = 100;
         static readonly string[] BotNames = { "أسد", "رامي", "أبو العز", "طارق", "معتز", "سامر", "ناصر", "قنّاص الساحل", "صقر", "ليث" };
 
+        public RoundPhase RoundPhase { get; private set; } = RoundPhase.Live;
+        public int DefendersScore { get; private set; }
+        public int AttackersScore { get; private set; }
+        public int RoundNumber { get; private set; } = 1;
+        public float FreezeTimeRemaining { get; private set; }
+        public bool BombPlanted { get; private set; }
+        public Vector3 BombPosition { get; private set; }
+        public float BombTimer { get; private set; }
+        public float PlantProgress { get; private set; }
+        public float DefuseProgress { get; private set; }
+        int _defLossStreak, _attLossStreak;
+        float _roundEndTimer;
+
         public SessionMode Mode => _request.Mode;
         public LaunchRequest Request => _request;
         public SessionStatus Status { get; private set; } = SessionStatus.Idle;
@@ -275,16 +288,50 @@ namespace Adventure3D.Networking
                 _playerScratch.Clear();
                 _playerScratch.AddRange(World.Players);
                 Physics.SyncTransforms();
+
+                if (RoundPhase == RoundPhase.FreezeTime)
+                {
+                    FreezeTimeRemaining = Mathf.Max(0f, FreezeTimeRemaining - World.TickDelta);
+                    if (FreezeTimeRemaining <= 0f)
+                    {
+                        RoundPhase = RoundPhase.Live;
+                        _roundStartTick = Tick;
+                        _tickEvents.Add(new CombatEvent { Type = CombatEventType.RoundRestart });
+                    }
+                }
+                else if (RoundPhase == RoundPhase.RoundEnd)
+                {
+                    _roundEndTimer -= World.TickDelta;
+                    if (_roundEndTimer <= 0f)
+                    {
+                        RoundNumber++;
+                        _roundStartTick = Tick;
+                        FreezeTimeRemaining = Mathf.Max(0f, Configuration.Cs16ConVars.MpFreezeTime);
+                        RoundPhase = FreezeTimeRemaining > 0f ? RoundPhase.FreezeTime : RoundPhase.Live;
+                        foreach (var p in _playerScratch)
+                            CombatRules.InitPlayer(p, p.Combat.Team, p.Combat.IsBot, World);
+                        BombPlanted = false;
+                        BombTimer = 0f;
+                        PlantProgress = 0f;
+                        DefuseProgress = 0f;
+                    }
+                }
+
                 foreach (var a in _playerScratch)
                 {
                     _commandsThisTick.TryGetValue(a.PlayerId, out var cmd);
+                    if (RoundPhase == RoundPhase.FreezeTime)
+                    {
+                        cmd.Move = Vector2.zero;
+                        cmd.Buttons &= ~(CommandButtons.Fire | CommandButtons.JumpPressed | CommandButtons.JumpHeld);
+                    }
                     CombatRules.Tick(a, cmd, World, World.TickDelta, eye, _tickEvents);
                 }
+                if (RoundPhase == RoundPhase.Live) UpdateBomb(World.TickDelta, _tickEvents);
                 Tick++;
-                if ((Tick - _roundStartTick) * World.TickDelta >= MatchLength)
+                if (RoundPhase == RoundPhase.Live && !BombPlanted && (Tick - _roundStartTick) * World.TickDelta >= MatchLength)
                 {
-                    CombatRules.RestartRound(World, _tickEvents);
-                    _roundStartTick = Tick;
+                    EndRoundWithWinner(Team.Defenders, _tickEvents);
                 }
                 DispatchEvents(_tickEvents);
                 if (_server != null) _server.QueueEvents(_tickEvents);
@@ -485,7 +532,7 @@ namespace Adventure3D.Networking
         {
             if (!IsAuthority) return 0;
             int removed = 0;
-            foreach (var id in _bots.Keys.ToList())
+            foreach (var id in new List<ushort>(_bots.Keys))
             {
                 if (World.Despawn(id)) removed++;
             }
@@ -516,8 +563,90 @@ namespace Adventure3D.Networking
         {
             BotSkill = Mathf.Clamp01(skill);
             if (!IsAuthority) return;
-            foreach (var id in _bots.Keys.ToList())
+            foreach (var id in new List<ushort>(_bots.Keys))
                 _bots[id] = new BotBrain(id, 1234 + id * 7919, BotSkill);
+        }
+
+        void UpdateBomb(float dt, List<CombatEvent> events)
+        {
+            if (BombPlanted)
+            {
+                BombTimer -= dt;
+                if (BombTimer <= 0f)
+                {
+                    BombPlanted = false;
+                    DefuseProgress = 0f;
+                    events.Add(new CombatEvent { Type = CombatEventType.BombExploded, Point = BombPosition });
+                    EndRoundWithWinner(Team.Attackers, events);
+                    return;
+                }
+                bool defusing = false;
+                foreach (var p in _playerScratch)
+                {
+                    if (!p.Alive || p.Combat.Team != Team.Defenders) continue;
+                    if (_commandsThisTick.TryGetValue(p.PlayerId, out var cmd) && cmd.SlotRequest == 8
+                        && Vector3.Distance(p.State.Position, BombPosition) <= 2.8f)
+                    {
+                        defusing = true;
+                        float defuseTime = (p.Combat.Flags & CombatFlags.Defuser) != 0 ? 4.5f : 8.0f;
+                        DefuseProgress += dt / defuseTime;
+                        if (DefuseProgress >= 1f)
+                        {
+                            BombPlanted = false;
+                            DefuseProgress = 0f;
+                            events.Add(new CombatEvent { Type = CombatEventType.BombDefused, Actor = p.PlayerId, Point = BombPosition });
+                            EndRoundWithWinner(Team.Defenders, events);
+                            return;
+                        }
+                        break;
+                    }
+                }
+                if (!defusing) DefuseProgress = 0f;
+                return;
+            }
+
+            bool planting = false;
+            foreach (var p in _playerScratch)
+            {
+                if (!p.Alive || p.Combat.Team != Team.Attackers) continue;
+                bool inSite = Vector3.Distance(p.State.Position, TestArenaLayout.BombSiteA) <= TestArenaLayout.BombSiteRadius
+                           || Vector3.Distance(p.State.Position, TestArenaLayout.BombSiteB) <= TestArenaLayout.BombSiteRadius;
+                if (inSite && _commandsThisTick.TryGetValue(p.PlayerId, out var cmd) && cmd.SlotRequest == 8)
+                {
+                    planting = true;
+                    PlantProgress += dt / 3.0f;
+                    if (PlantProgress >= 1f)
+                    {
+                        PlantProgress = 0f;
+                        BombPlanted = true;
+                        BombPosition = p.State.Position;
+                        BombTimer = 45f;
+                        events.Add(new CombatEvent { Type = CombatEventType.BombPlanted, Actor = p.PlayerId, Point = BombPosition });
+                    }
+                    break;
+                }
+            }
+            if (!planting) PlantProgress = 0f;
+        }
+
+        /// <summary>Ends the current round, awards CS 1.6 win/loss money, and schedules FreezeTime.</summary>
+        public void EndRoundWithWinner(Team winner, List<CombatEvent> events)
+        {
+            if (RoundPhase == RoundPhase.RoundEnd) return;
+            RoundPhase = RoundPhase.RoundEnd;
+            _roundEndTimer = 5f;
+            if (winner == Team.Defenders) { DefendersScore++; _defLossStreak = 0; _attLossStreak = Mathf.Min(4, _attLossStreak + 1); }
+            else { AttackersScore++; _attLossStreak = 0; _defLossStreak = Mathf.Min(4, _defLossStreak + 1); }
+
+            int defReward = winner == Team.Defenders ? 3250 : 1400 + _defLossStreak * 500;
+            int attReward = winner == Team.Attackers ? 3250 : 1400 + _attLossStreak * 500;
+            foreach (var p in World.Players)
+            {
+                int add = p.Combat.Team == Team.Defenders ? defReward : attReward;
+                p.Combat.Money = Mathf.Min(CombatRules.MaxMoney, p.Combat.Money + add);
+            }
+            short packedScore = (short)((DefendersScore & 0xFF) | ((AttackersScore & 0xFF) << 8));
+            events.Add(new CombatEvent { Type = CombatEventType.RoundWin, Actor = (ushort)winner, Amount = packedScore });
         }
 
         /// <summary>Restarts the round immediately (sv_restart) by respawning all players.</summary>

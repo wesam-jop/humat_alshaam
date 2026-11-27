@@ -38,7 +38,7 @@ namespace Adventure3D.Core
         /// <summary>Absolute pitch in degrees (positive looks down, Unity convention).</summary>
         public float Pitch;
         public CommandButtons Buttons;
-        /// <summary>Direct weapon slot request: 0 none, 1 primary, 2 secondary, 3 knife.</summary>
+        /// <summary>Direct weapon slot request: 0 none, 1 primary, 2 secondary, 3 knife, 4 drop, 5 HE, 6 Flash, 7 Smoke, 8 Use/C4.</summary>
         public byte SlotRequest;
 
         public bool JumpPressed => (Buttons & CommandButtons.JumpPressed) != 0;
@@ -68,7 +68,7 @@ namespace Adventure3D.Core
             c.Pitch = Mathf.Clamp(c.Pitch, -89f, 89f);
             c.Buttons &= CommandButtons.JumpPressed | CommandButtons.JumpHeld | CommandButtons.Sprint | CommandButtons.Fire
                          | CommandButtons.Reload | CommandButtons.Aim | CommandButtons.SwitchWeapon | CommandButtons.Crouch;
-            if (c.SlotRequest > 3) c.SlotRequest = 0;
+            if (c.SlotRequest > 8) c.SlotRequest = 0;
             return c;
         }
 

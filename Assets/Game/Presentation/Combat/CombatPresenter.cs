@@ -59,6 +59,7 @@ namespace Adventure3D.Presentation
             p.BuildOverlays();
             session.CombatEventRaised += p.OnCombatEvent;
             HudInteractive.Create(session, hud, viewModel, camera);
+            TacticalGrenadeSystem.Create(session, hud.Input, camera, hud.SafeRootRect);
             return p;
         }
 
@@ -185,7 +186,15 @@ namespace Adventure3D.Presentation
                         _damageTimer = Mathf.Clamp01(e.Amount / 60f) * 0.5f + 0.35f;
                         _lastDamageFrom = e.Origin;
                         _arrowTimer = 1.2f;
-                        _ui.PlayOneShot(ProceduralAudio.Hurt, 0.6f);
+                        bool fall = e.Actor == e.Target;
+                        _ui.PlayOneShot(fall ? ProceduralAudio.FallPain() : ProceduralAudio.Hurt, 0.65f);
+                    }
+                    else if (_session.World.TryGet(e.Target, out var hurtPlayer))
+                    {
+                        var clip = e.Actor == e.Target ? ProceduralAudio.FallPain()
+                            : hurtPlayer.Combat.Armor > 0 ? ProceduralAudio.ArmorHit(e.Headshot)
+                            : ProceduralAudio.FleshHit();
+                        if (clip != null) AudioSource.PlayClipAtPoint(clip, e.Point, 0.7f);
                     }
                     break;
                 case CombatEventType.Kill:
@@ -194,6 +203,8 @@ namespace Adventure3D.Presentation
                     var victimTeam = TeamOf(e.Target);
                     string weaponIcon = w.Id;
                     _hud.PushKillEvent(_session.NameOf(e.Actor), killerTeam == Team.Defenders, weaponIcon, _session.NameOf(e.Target), victimTeam == Team.Defenders);
+                    var deathClip = ProceduralAudio.Death();
+                    if (deathClip != null) AudioSource.PlayClipAtPoint(deathClip, e.Point, 0.8f);
                     if (e.Actor == me && e.Target != me)
                     {
                         ShowCenter(Strings.Format("combat.kill_confirm", _session.NameOf(e.Target)) + (e.Headshot ? " • " + Strings.Get("combat.headshot") : ""), 2f);
@@ -207,8 +218,31 @@ namespace Adventure3D.Presentation
                     if (e.Actor == me) _ui.PlayOneShot(ProceduralAudio.DryFire, 0.8f);
                     break;
                 case CombatEventType.RoundRestart:
-                    ShowCenter(Strings.Get("combat.round_restart"), 3f);
+                    ShowCenter(Strings.Get("combat.round_restart"), 2.5f);
+                    _ui.PlayOneShot(ProceduralAudio.RoundGo, 0.7f);
                     break;
+                case CombatEventType.RoundWin:
+                {
+                    bool defWon = e.Actor == (ushort)Team.Defenders;
+                    ShowCenter(defWon ? "حماة الشام انتصروا في الجولة!" : "الفريق المنافس انتصر في الجولة!", 4f);
+                    _ui.PlayOneShot(ProceduralAudio.RoundResult(defWon), 0.85f);
+                    break;
+                }
+                case CombatEventType.BombPlanted:
+                    ShowCenter("تم زرع القنبلة C4!", 3.5f);
+                    _ui.PlayOneShot(ProceduralAudio.BombPlanted, 0.85f);
+                    break;
+                case CombatEventType.BombDefused:
+                    ShowCenter("تم تفكيك القنبلة بنجاح!", 3.5f);
+                    _ui.PlayOneShot(ProceduralAudio.BombDefused, 0.85f);
+                    break;
+                case CombatEventType.BombExploded:
+                {
+                    ShowCenter("انفجرت القنبلة C4!", 3.5f);
+                    var exp = Resources.Load<AudioClip>("Adventure3D/Audio/Weapons/c4_explode1");
+                    if (exp != null) AudioSource.PlayClipAtPoint(exp, e.Point, 1f);
+                    break;
+                }
             }
         }
 
@@ -269,6 +303,36 @@ namespace Adventure3D.Presentation
             if (_scope.gameObject.activeSelf != scope) _scope.gameObject.SetActive(scope);
 
             UpdateWorldWeapons();
+            UpdateFootsteps(dt);
+            if (_session.PlantProgress > 0.01f)
+                ShowCenter($"جاري زرع القنبلة... {Mathf.RoundToInt(_session.PlantProgress * 100f)}%", 0.15f);
+            else if (_session.DefuseProgress > 0.01f)
+                ShowCenter($"جاري تفكيك القنبلة... {Mathf.RoundToInt(_session.DefuseProgress * 100f)}%", 0.15f);
+        }
+
+        readonly Dictionary<ushort, float> _stepTimer = new Dictionary<ushort, float>();
+
+        void UpdateFootsteps(float dt)
+        {
+            foreach (var a in _session.World.Players)
+            {
+                if (a == null || !a.Alive || !a.State.Grounded || a.State.Crouching) continue;
+                float speed = a.State.HorizontalSpeed;
+                if (speed < 3.4f) continue; // silent walk threshold
+                _stepTimer.TryGetValue(a.PlayerId, out float t);
+                t -= dt;
+                if (t <= 0f)
+                {
+                    t = speed > 6.0f ? 0.30f : 0.42f;
+                    var clip = ProceduralAudio.Footstep();
+                    if (clip != null)
+                    {
+                        if (a.IsLocal) _ui.PlayOneShot(clip, 0.32f);
+                        else AudioSource.PlayClipAtPoint(clip, a.State.Position, 0.55f);
+                    }
+                }
+                _stepTimer[a.PlayerId] = t;
+            }
         }
 
         void UpdateWorldWeapons()

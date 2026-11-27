@@ -26,7 +26,7 @@ namespace Adventure3D.Presentation
         ViewModelRig _model;
         byte _modelWeapon = 255;
         SpriteRenderer _flash;
-        Light _flashLight;
+        Light _flashLight, _tacticalTorch;
         float _flashTimer;
 
         Vector3 _swayRot, _swayVel;
@@ -100,6 +100,29 @@ namespace Adventure3D.Presentation
             _flashLight.intensity = 0f;
             lightGo.transform.SetParent(transform, false);
             lightGo.transform.localPosition = new Vector3(0.1f, -0.05f, 0.8f);
+
+            var torchGo = new GameObject("TacticalFlashlight");
+            torchGo.transform.SetParent(_rig.Camera.transform, false);
+            _tacticalTorch = torchGo.AddComponent<Light>();
+            _tacticalTorch.type = LightType.Spot;
+            _tacticalTorch.range = 28f;
+            _tacticalTorch.spotAngle = 46f;
+            _tacticalTorch.intensity = 2.6f;
+            _tacticalTorch.color = new Color(1f, 0.96f, 0.86f);
+            _tacticalTorch.enabled = false;
+            if (_input != null) _input.FlashlightPressed += ToggleFlashlight;
+        }
+
+        void OnDestroy()
+        {
+            if (_input != null) _input.FlashlightPressed -= ToggleFlashlight;
+        }
+
+        void ToggleFlashlight()
+        {
+            if (_tacticalTorch == null) return;
+            _tacticalTorch.enabled = !_tacticalTorch.enabled;
+            _audio.PlayOneShot(ProceduralAudio.DryFire, 0.45f);
         }
 
         /// <summary>Called by CombatEffects for the local player's authoritative shots.</summary>

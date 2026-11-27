@@ -185,6 +185,7 @@ namespace Adventure3D.Gameplay
         float _standEye = 1.62f, _crouchEye = 1.02f, _crouchCamTime = 0.12f, _eyeCurrent = 1.62f;
         Vector3[] _bodyRestPos, _bodyRestScale;
         Animation _characterAnim;
+        Transform _spineBone;
         string _currentAnimClip;
 
         /// <summary>
@@ -299,6 +300,7 @@ namespace Adventure3D.Gameplay
             model.transform.localPosition = new Vector3(0f, -bottom, 0f);
 
             _characterAnim = model.GetComponentInChildren<Animation>(true);
+            _spineBone = FindChildRecursive(model.transform, "Bip01 Spine1");
             _currentAnimClip = null;
             UpdateCharacterAnimation();
 
@@ -308,8 +310,22 @@ namespace Adventure3D.Gameplay
             return model;
         }
 
+        static Transform FindChildRecursive(Transform root, string name)
+        {
+            if (root.name == name) return root;
+            foreach (Transform c in root)
+            {
+                var found = FindChildRecursive(c, name);
+                if (found != null) return found;
+            }
+            return null;
+        }
+
         void UpdateCharacterAnimation()
         {
+            if (_spineBone != null && Alive)
+                _spineBone.localRotation = Quaternion.Euler(0f, 0f, Mathf.Clamp(-State.Pitch * 0.4f, -25f, 25f));
+
             if (_characterAnim == null) return;
             float horizSpeedSq = State.Velocity.x * State.Velocity.x + State.Velocity.z * State.Velocity.z;
             string desired = !State.Grounded ? "jump"

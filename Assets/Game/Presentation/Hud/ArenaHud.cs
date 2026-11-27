@@ -77,6 +77,7 @@ namespace Adventure3D.Presentation
         public GameSession Session => _session;
         public bool AnyMenuOpen => AnyModalOpen;
         public RectTransform SafeRootRect { get; private set; }
+        public LocalPlayerInput Input => _input;
 
         public static ArenaHud Create(GameSession session, LocalPlayerInput input, Action leaveToMenu)
         {
@@ -124,7 +125,12 @@ namespace Adventure3D.Presentation
             RefreshWeaponDisplay();
             RefreshVitalsDisplay();
 
-            if (_input != null) _input.MenuPressed += TogglePause;
+            if (_input != null)
+            {
+                _input.MenuPressed += TogglePause;
+                _input.RadioMenuPressed += OpenRadioMenu;
+            }
+            BuildRadioMenu(safe);
             _session.StatusChanged += OnStatusChanged;
             ApplyCursor();
         }
@@ -249,7 +255,23 @@ namespace Adventure3D.Presentation
             _timerText.fontStyle = FontStyle.Bold;
             TacticalHudArt.AddShadow(_timerText);
             UiKit.Stretch((RectTransform)_timerText.transform);
+
+            _defScoreText = UiKit.LtrLabel(rt, "CT 0", 16, TextAnchor.MiddleRight);
+            _defScoreText.color = TacticalHudArt.GoldSoft;
+            _defScoreText.fontStyle = FontStyle.Bold;
+            TacticalHudArt.AddShadow(_defScoreText);
+            UiKit.Anchor((RectTransform)_defScoreText.transform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(-58f, 0f));
+            ((RectTransform)_defScoreText.transform).sizeDelta = new Vector2(54f, 28f);
+
+            _oppScoreText = UiKit.LtrLabel(rt, "0 T", 16, TextAnchor.MiddleLeft);
+            _oppScoreText.color = TacticalHudArt.RadarEnemy;
+            _oppScoreText.fontStyle = FontStyle.Bold;
+            TacticalHudArt.AddShadow(_oppScoreText);
+            UiKit.Anchor((RectTransform)_oppScoreText.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(58f, 0f));
+            ((RectTransform)_oppScoreText.transform).sizeDelta = new Vector2(54f, 28f);
         }
+
+        Text _defScoreText, _oppScoreText;
 
         void BuildWeaponAndAmmo(Transform safe)
         {
@@ -494,7 +516,11 @@ namespace Adventure3D.Presentation
 
         void OnDestroy()
         {
-            if (_input != null) _input.MenuPressed -= TogglePause;
+            if (_input != null)
+            {
+                _input.MenuPressed -= TogglePause;
+                _input.RadioMenuPressed -= OpenRadioMenu;
+            }
             if (_session != null) _session.StatusChanged -= OnStatusChanged;
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
@@ -511,6 +537,76 @@ namespace Adventure3D.Presentation
             string title = _session.Mode == SessionMode.Client && reason != SessionEndReason.ServerClosed && reason != SessionEndReason.ConnectionLost
                 ? Strings.Get("error.title") : Strings.Get("error.ended_title");
             _dialog.Show(title, EndReasonText.Message(reason), null, () => _leaveToMenu?.Invoke());
+        }
+
+        RectTransform _radioPanel;
+        ArabicText _radioTitle;
+        int _radioGroup;
+        float _radioTimer;
+
+        static readonly (string label, string clip)[] RadioGroup1 =
+        {
+            ("1. تغطية! (Cover Me)", "ct_coverme"),
+            ("2. اتبعوني! (Follow Me)", "followme"),
+            ("3. خذوا مواقعكم (In Position)", "ct_inpos"),
+            ("4. دعم سريع! (Need Backup)", "ct_backup"),
+            ("5. تراجعوا! (Fallback)", "fallback"),
+        };
+        static readonly (string label, string clip)[] RadioGroup2 =
+        {
+            ("1. تقدموا! (Go Go Go)", "com_go"),
+            ("2. العدو سقط! (Enemy Down)", "enemydown"),
+            ("3. المنطقة آمنة (Sector Clear)", "clear"),
+            ("4. تم / إيجابي (Affirmative)", "ct_affirm"),
+            ("5. التزموا مواقعكم (Hold)", "com_getinpos"),
+        };
+
+        void BuildRadioMenu(Transform safe)
+        {
+            _radioPanel = UiKit.Panel("RadioMenu", safe, new Vector2(310, 220));
+            UiKit.Anchor(_radioPanel, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(24f, 0f));
+            UiKit.Column(_radioPanel, 6, 12);
+            _radioTitle = UiKit.Label(_radioPanel, "الراديو التكتيكي (1-5)", 18, TextAnchor.MiddleRight, 26f);
+            _radioTitle.Target.color = MenuStyle.Gold;
+            for (int i = 0; i < 5; i++)
+            {
+                var lbl = UiKit.Label(_radioPanel, "", 16, TextAnchor.MiddleRight, 26f);
+                lbl.Target.color = MenuStyle.TextWhite;
+            }
+            _radioPanel.gameObject.SetActive(false);
+        }
+
+        void OpenRadioMenu(int group)
+        {
+            if (_radioPanel == null) return;
+            _radioGroup = group;
+            _radioTimer = 4.5f;
+            _radioPanel.gameObject.SetActive(true);
+            var list = group == 1 ? RadioGroup1 : RadioGroup2;
+            var labels = _radioPanel.GetComponentsInChildren<ArabicText>(true);
+            for (int i = 0; i < 5 && i + 1 < labels.Length; i++)
+                labels[i + 1].SetText(list[i].label);
+        }
+
+        void UpdateRadioInput()
+        {
+            if (_radioPanel == null || !_radioPanel.gameObject.activeSelf) return;
+            _radioTimer -= Time.unscaledDeltaTime;
+            if (_radioTimer <= 0f) { _radioPanel.gameObject.SetActive(false); return; }
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            if (kb == null) return;
+            int pick = kb.digit1Key.wasPressedThisFrame ? 0
+                : kb.digit2Key.wasPressedThisFrame ? 1
+                : kb.digit3Key.wasPressedThisFrame ? 2
+                : kb.digit4Key.wasPressedThisFrame ? 3
+                : kb.digit5Key.wasPressedThisFrame ? 4 : -1;
+            if (pick >= 0)
+            {
+                var list = _radioGroup == 1 ? RadioGroup1 : RadioGroup2;
+                var clip = ProceduralAudio.RadioClip(list[pick].clip);
+                if (clip != null) AudioSource.PlayClipAtPoint(clip, Camera.main != null ? Camera.main.transform.position : Vector3.zero, 0.85f);
+                _radioPanel.gameObject.SetActive(false);
+            }
         }
 
         public void TogglePause()
@@ -573,16 +669,22 @@ namespace Adventure3D.Presentation
                 else if (!connecting && _loading.IsOpen) _loading.Hide();
             }
 
-            _roundTime = _session.MatchTimeRemaining; // real match clock (authority) or server clock (client)
+            _roundTime = _session.RoundPhase == RoundPhase.FreezeTime
+                ? _session.FreezeTimeRemaining
+                : _session.MatchTimeRemaining; // real match clock (authority) or server clock (client)
             int mins = Mathf.FloorToInt(_roundTime / 60f), secs = Mathf.FloorToInt(_roundTime % 60f);
             if (_timerText != null)
             {
                 _timerText.text = $"{mins:00}:{secs:00}";
                 bool urgent = _roundTime <= 15f && _roundTime > 0f;
-                _timerText.color = urgent ? TacticalHudArt.RadarEnemy : TacticalHudArt.Cream;
+                _timerText.color = _session.RoundPhase == RoundPhase.FreezeTime
+                    ? TacticalHudArt.AllyBlue
+                    : (urgent ? TacticalHudArt.RadarEnemy : TacticalHudArt.Cream);
                 if (_timerRingImg != null)
                     _timerRingImg.color = urgent ? Color.Lerp(Color.white, TacticalHudArt.RadarEnemy, 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 8f)) : Color.white;
             }
+            if (_defScoreText != null) _defScoreText.text = "CT " + _session.DefendersScore;
+            if (_oppScoreText != null) _oppScoreText.text = _session.AttackersScore + " T";
 
             if (_hitmarkerTimer > 0f)
             {
@@ -624,6 +726,7 @@ namespace Adventure3D.Presentation
                 }
             }
 
+            UpdateRadioInput();
             if (PauseOpen) UiFocus.KeepFocus(_resume);
             if (Cursor.lockState != CursorLockMode.Locked && PlatformInfo.UsesMouseLook && !AnyModalOpen && !_ended
                 && AppFocus.HasFocus && UnityEngine.InputSystem.Mouse.current != null && UnityEngine.InputSystem.Mouse.current.leftButton.wasPressedThisFrame)
