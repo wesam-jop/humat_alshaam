@@ -461,15 +461,14 @@ namespace Adventure3D.Presentation
                 if (has)
                 {
                     Vector3 centerLocal = root.transform.InverseTransformPoint(b.center);
-                    model.transform.localPosition = -centerLocal;
                     if (b.size.x > b.size.z * 1.3f)
                     {
                         var holder = new GameObject("Align").transform;
                         holder.SetParent(root.transform, false);
                         holder.localRotation = Quaternion.Euler(0f, 90f, 0f);
-                        model.transform.SetParent(holder, true);
-                        model.transform.localPosition = Quaternion.Euler(0f, -90f, 0f) * (-centerLocal);
+                        model.transform.SetParent(holder, false);
                     }
+                    model.transform.localPosition = -centerLocal;
                 }
                 return root;
             }

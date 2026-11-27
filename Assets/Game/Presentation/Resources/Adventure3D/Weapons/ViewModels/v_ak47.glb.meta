@@ -1,4 +1,4 @@
-fileFormatVersion: 2
+﻿fileFormatVersion: 2
 guid: e29cd77e40fb35b44a8ea3e175f96caa
 ScriptedImporter:
   internalIDToNameTable: []
@@ -12,7 +12,7 @@ ScriptedImporter:
     generateSecondaryUVSet: 0
   importSettings:
     nodeNameMethod: 1
-    animationMethod: 2
+    animationMethod: 1
     generateMipMaps: 1
     texturesReadable: 0
     defaultMinFilterMode: 9729
