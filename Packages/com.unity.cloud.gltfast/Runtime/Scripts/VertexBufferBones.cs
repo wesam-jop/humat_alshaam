@@ -226,7 +226,6 @@ namespace GLTFast
                     break;
             }
 
-            m_LastJobHandle = jobHandle;
             Profiler.EndSample();
             return jobHandle;
         }
@@ -267,7 +266,6 @@ namespace GLTFast
                     break;
             }
 
-            m_LastJobHandle = jobHandle;
             Profiler.EndSample();
             return jobHandle;
         }
